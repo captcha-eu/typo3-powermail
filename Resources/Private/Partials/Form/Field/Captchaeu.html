@@ -18,7 +18,7 @@
 					};
 					KROTReady(function () {
 						KROT.init();
-						KROT.publicSecret = "{settings.captchaeu.publickey}";
+						KROT.publicSecret = window.CaptchaEUSettings.publicSecret;
 						var forms = document.getElementsByClassName("powermail_form");
 						Array.from(forms).forEach(function (f) {
 							KROT.interceptForm(f, true);
