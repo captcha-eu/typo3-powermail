@@ -23,12 +23,14 @@
 						Array.from(forms).forEach(function (f) {
 							KROT.interceptForm(f, true);
 							f.addEventListener("submit", function (e) {
+								document.querySelector(".powermail_submit").disabled = true;
 								e.preventDefault();
 								if (f.checkValidity()) {
 									KROT.getSolution()
 										.then((sol) => {
 											f.querySelector(".captcha_at_hidden_field").value = JSON.stringify(sol);
 											f.submit();
+											document.querySelector(".powermail_submit").disabled = false;
 										});
 									console.log("VALID");
 								}
