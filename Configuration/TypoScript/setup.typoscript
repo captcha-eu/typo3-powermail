@@ -1,0 +1,5 @@
+page {
+  includeCSS {
+    captchaeu = EXT:captchaeu/Resources/Public/Css/styles.css
+  }
+}
