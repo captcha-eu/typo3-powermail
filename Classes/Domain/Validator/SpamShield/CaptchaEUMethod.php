@@ -8,6 +8,7 @@ use TYPO3\CMS\Core\Configuration\Exception\ExtensionConfigurationExtensionNotCon
 use TYPO3\CMS\Core\Configuration\Exception\ExtensionConfigurationPathDoesNotExistException;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Extbase\Object\Exception;
+use TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication;
 
 /**
  * Class CaptchaEUMethod
@@ -134,18 +135,20 @@ class CaptchaEUMethod extends AbstractMethod
     {
         if (property_exists($this, 'flexForm')) {
             $confirmationActive = $this->flexForm['settings']['flexform']['main']['confirmation'] === '1';
-            return $this->getActionName() === 'create' && $confirmationActive;
+            $actionName = $this->getActionName();
+            $isCreateAction = $actionName === 'create' || $actionName === 'checkCreate';
+            return $isCreateAction && $confirmationActive;
         }
         return false;
     }
 
     /**
-     * @return string "confirmation" or "create"
+     * @return string "confirmation" or "create" / "checkConfirmation" or "checkCreate"
      */
     protected function getActionName(): string
     {
         $pluginVariables = GeneralUtility::_GPmerged('tx_powermail_pi1');
-        return $pluginVariables['action'];
+        return $pluginVariables['action'] ?? '';
     }
 
     /**
@@ -156,7 +159,7 @@ class CaptchaEUMethod extends AbstractMethod
     protected function hasValidatedCaptchaInSession(): bool
     {
         $sessionKey = $this->getCaptchaSessionKey();
-        $sessionData = $_SESSION[$sessionKey] ?? null;
+        $sessionData = $this->getFromSession($sessionKey);
 
         // Check if validation exists and is recent (within 30 minutes)
         if ($sessionData && is_array($sessionData)) {
@@ -182,11 +185,12 @@ class CaptchaEUMethod extends AbstractMethod
     protected function storeCaptchaValidationInSession(): void
     {
         $sessionKey = $this->getCaptchaSessionKey();
-        $_SESSION[$sessionKey] = [
+        $data = [
             'validated' => true,
             'timestamp' => time(),
             'formUid' => $this->mail->getForm()->getUid()
         ];
+        $this->storeInSession($sessionKey, $data);
     }
 
     /**
@@ -197,7 +201,7 @@ class CaptchaEUMethod extends AbstractMethod
     protected function clearCaptchaValidationFromSession(): void
     {
         $sessionKey = $this->getCaptchaSessionKey();
-        unset($_SESSION[$sessionKey]);
+        $this->removeFromSession($sessionKey);
     }
 
     /**
@@ -208,5 +212,74 @@ class CaptchaEUMethod extends AbstractMethod
     protected function getCaptchaSessionKey(): string
     {
         return 'tx_captchaeu_powermail_validated';
+    }
+
+    /**
+     * Get frontend user authentication object
+     *
+     * @return FrontendUserAuthentication|null
+     */
+    protected function getFrontendUser(): ?FrontendUserAuthentication
+    {
+        // TYPO3 12+: Use request attribute
+        if (isset($GLOBALS['TYPO3_REQUEST'])) {
+            $frontendUser = $GLOBALS['TYPO3_REQUEST']->getAttribute('frontend.user');
+            if ($frontendUser instanceof FrontendUserAuthentication) {
+                return $frontendUser;
+            }
+        }
+
+        // TYPO3 11: Use TSFE
+        if (isset($GLOBALS['TSFE']) && $GLOBALS['TSFE']->fe_user instanceof FrontendUserAuthentication) {
+            return $GLOBALS['TSFE']->fe_user;
+        }
+
+        return null;
+    }
+
+    /**
+     * Store data in TYPO3 frontend user session
+     *
+     * @param string $key
+     * @param mixed $data
+     * @return void
+     */
+    protected function storeInSession(string $key, $data): void
+    {
+        $frontendUser = $this->getFrontendUser();
+        if ($frontendUser) {
+            $frontendUser->setKey('ses', $key, $data);
+            $frontendUser->storeSessionData();
+        }
+    }
+
+    /**
+     * Get data from TYPO3 frontend user session
+     *
+     * @param string $key
+     * @return mixed
+     */
+    protected function getFromSession(string $key)
+    {
+        $frontendUser = $this->getFrontendUser();
+        if ($frontendUser) {
+            return $frontendUser->getKey('ses', $key);
+        }
+        return null;
+    }
+
+    /**
+     * Remove data from TYPO3 frontend user session
+     *
+     * @param string $key
+     * @return void
+     */
+    protected function removeFromSession(string $key): void
+    {
+        $frontendUser = $this->getFrontendUser();
+        if ($frontendUser) {
+            $frontendUser->setKey('ses', $key, null);
+            $frontendUser->storeSessionData();
+        }
     }
 }
