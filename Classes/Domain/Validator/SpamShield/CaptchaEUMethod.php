@@ -149,9 +149,10 @@ class CaptchaEUMethod extends AbstractMethod
     {
       if (isset($GLOBALS['TYPO3_REQUEST'])) {
         $request = $GLOBALS['TYPO3_REQUEST'];
-        $getMergedWithPost = $request->getQueryParams('tx_powermail_pi1');
-        \TYPO3\CMS\Core\Utility\ArrayUtility::mergeRecursiveWithOverrule($getMergedWithPost, $request->getParsedBody()['tx_powermail_pi1']);
-        return $pluginVariables['action'] ?? '';
+        $queryParams = $request->getQueryParams()['tx_powermail_pi1'] ?? [];
+        $bodyParams = $request->getParsedBody()['tx_powermail_pi1'] ?? [];
+        \TYPO3\CMS\Core\Utility\ArrayUtility::mergeRecursiveWithOverrule($queryParams, $bodyParams);
+        return $queryParams['action'] ?? '';
       }
       return '';
     }
