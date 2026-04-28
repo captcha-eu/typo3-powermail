@@ -40,21 +40,30 @@ class CaptchaEUMethod extends AbstractMethod
         }
     }
 
-    public function checkSolution($solution) {
-        $ch = curl_init("https://www.captcha.eu/validate");
+    public function checkSolution(string $solution): bool
+    {
+        if ($solution === '') {
+            return false;
+        }
+
+        $ch = curl_init('https://www.captcha.eu/validate');
+        if ($ch === false) {
+            return false;
+        }
+
         curl_setopt($ch, CURLOPT_POSTFIELDS, $solution);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/json', 'Rest-Key: ' . $this->restKey));
+        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json', 'Rest-Key: ' . $this->restKey]);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         $result = curl_exec($ch);
         curl_close($ch);
-  
-        $resultObject = json_decode($result);
-        if ($resultObject->success) {
-          return true;
-        } else {
-          return false;
+
+        if (!is_string($result) || $result === '') {
+            return false;
         }
-      }
+
+        $resultObject = json_decode($result, false);
+        return (bool)($resultObject->success ?? false);
+    }
   
 
     /**
@@ -69,11 +78,8 @@ class CaptchaEUMethod extends AbstractMethod
         if (!$this->isFormWithCaptchaEUField() || $this->isCaptchaCheckToSkip()) {
             return false;
         }
-        $result = $this->checkSolution($_POST["captcha_at_solution"]);
-        if(!$result) {
-            return true;
-        }
-        return false;
+        $result = $this->checkSolution((string)($_POST['captcha_at_solution'] ?? ''));
+        return !$result;
     }
 
     /**
@@ -120,7 +126,12 @@ class CaptchaEUMethod extends AbstractMethod
      */
     protected function getActionName(): string
     {
-        $pluginVariables = GeneralUtility::_GPmerged('tx_powermail_pi1');
-        return $pluginVariables['action'];
+        if (is_callable([GeneralUtility::class, '_GPmerged'])) {
+            $pluginVariables = GeneralUtility::_GPmerged('tx_powermail_pi1');
+        } else {
+            $pluginVariables = $_REQUEST['tx_powermail_pi1'] ?? [];
+        }
+
+        return (string)($pluginVariables['action'] ?? '');
     }
 }
