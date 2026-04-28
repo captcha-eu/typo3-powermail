@@ -41,8 +41,14 @@ plugin.tx_powermail.settings.setup.spamshield.logfileLocation = typo3temp/logs/p
 ```
 
 
+## Compatibility
+
+- TYPO3: 10.4 LTS, 11.5 LTS, 12.4 LTS, 13.4 LTS
+- powermail: 8.5 - 13.x
+
 ## Changelog
 
 | Version | Date       | Description                                                           |
 |---------|------------|-----------------------------------------------------------------------|
+| 1.1.0   | 2026-04-28 | Add TYPO3 v13 support and broaden compatibility to TYPO3 10-13 / powermail 8.5-13 |
 | 1.0.0   | 2023-08-30 | Initial upload - have fun                                             |

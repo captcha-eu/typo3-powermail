@@ -1,5 +1,9 @@
 # cat=captchaeu//0010; type=text; label= Public Key: Go to www.captcha.eu/dashboard to get the keys.
-plugin.captchaeu.publickey = abcdef
+plugin.tx_captchaeu.publickey = abcdef
 
 # cat=captchaeu//0020; type=text; label= Captcha.eu RestKey: Go to www.captcha.eu/dashboard to get the keys
-plugin.captchaeu.restkey = abcdef
+plugin.tx_captchaeu.restkey = abcdef
+
+# Backward compatibility for older constant keys
+plugin.captchaeu.publickey = {$plugin.tx_captchaeu.publickey}
+plugin.captchaeu.restkey = {$plugin.tx_captchaeu.restkey}
